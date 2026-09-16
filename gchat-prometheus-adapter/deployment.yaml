@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gchat-adapter
+  namespace: monitoring
+spec:
+  selector:
+    app: gchat-adapter
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gchat-adapter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gchat-adapter
+  template:
+    metadata:
+      labels:
+        app: gchat-adapter
+    spec:
+      containers:
+        - name: gchat-adapter
+          image: josegdplabs/gchat-adapter:0.1.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: gchat-adapter-webhooks
+          env:
+            - name: GRAFANA_URL
+              value: https://grafana-kube.obrol.id
+            - name: TZ_DISPLAY
+              value: Asia/Jakarta
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 128Mi }
